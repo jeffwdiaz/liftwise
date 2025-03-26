@@ -1,0 +1,31 @@
+
+export type MuscleGroup = 'shoulders' | 'legs' | 'back' | 'arms' | 'chest';
+
+export interface Exercise {
+  id: string;
+  name: string;
+  muscleGroup: MuscleGroup;
+  description?: string;
+}
+
+export interface Set {
+  reps: number;
+  completed: boolean;
+}
+
+export interface WorkoutExercise {
+  exercise: Exercise;
+  sets: Set[];
+}
+
+export interface Workout {
+  id: string;
+  date: string;
+  energyLevel: number;
+  exercises: WorkoutExercise[];
+  completed: boolean;
+}
+
+export interface WorkoutHistory {
+  workouts: Workout[];
+}
