@@ -25,8 +25,8 @@ const NotFound = () => {
         <p className="text-xl text-muted-foreground">This page seems to be missing from your workout routine</p>
         
         <div className="pt-4">
-          <Button href="/" className="swiss-button" asChild>
-            <a>Return to Workouts</a>
+          <Button className="swiss-button" asChild>
+            <a href="/">Return to Workouts</a>
           </Button>
         </div>
       </div>
