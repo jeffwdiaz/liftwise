@@ -36,9 +36,13 @@ const Index = () => {
     if (useAi) {
       // Check if we have the API key
       if (hasGeminiApiKey()) {
-        setState({ ...state, screen: 'aiForm' });
+        if ('energyLevel' in state) {
+          setState({ screen: 'aiForm', energyLevel: state.energyLevel });
+        }
       } else {
-        setState({ ...state, screen: 'aiSetup' });
+        if ('energyLevel' in state) {
+          setState({ screen: 'aiSetup', energyLevel: state.energyLevel });
+        }
       }
     } else {
       // Use traditional method

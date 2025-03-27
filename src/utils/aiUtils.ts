@@ -2,30 +2,73 @@
 import { AIWorkoutPrompt, Workout, MuscleGroup, WorkoutExercise } from "@/types";
 import exercises from "@/data/exercises";
 import { v4 as uuidv4 } from "uuid";
+import { getWorkoutHistory } from "./workoutUtils";
 
-// This would typically come from an environment variable
-// Since this is a frontend-only app, we'll handle it in localStorage for demo purposes
+// Local storage for API key functions
 const getGeminiApiKey = (): string | null => {
   return localStorage.getItem("gemini_api_key");
 };
 
-// Save API key to localStorage
 export const saveGeminiApiKey = (apiKey: string): void => {
   localStorage.setItem("gemini_api_key", apiKey);
 };
 
-// Check if API key exists
 export const hasGeminiApiKey = (): boolean => {
   return !!getGeminiApiKey();
 };
 
-// Generate a prompt for Gemini based on user preferences
+// Get a summary of recent exercise history for a muscle group
+const getRecentMuscleGroupActivity = (muscleGroup: MuscleGroup): string => {
+  const history = getWorkoutHistory();
+  
+  // Filter workouts for this muscle group
+  const relevantWorkouts = history.workouts
+    .filter(workout => workout.exercises.some(ex => ex.exercise.muscleGroup === muscleGroup))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+  if (relevantWorkouts.length === 0) {
+    return `No recent workouts for ${muscleGroup}.`;
+  }
+  
+  const lastWorkout = relevantWorkouts[0];
+  const daysSinceLastWorkout = Math.floor(
+    (new Date().getTime() - new Date(lastWorkout.date).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  
+  // Calculate average reps and sets from last workout
+  const lastWorkoutExercises = lastWorkout.exercises
+    .filter(ex => ex.exercise.muscleGroup === muscleGroup);
+    
+  const avgSets = lastWorkoutExercises.reduce((sum, ex) => sum + ex.sets.length, 0) / lastWorkoutExercises.length;
+  const avgReps = lastWorkoutExercises.reduce((sum, ex) => {
+    const totalReps = ex.sets.reduce((s, set) => s + set.reps, 0);
+    return sum + (totalReps / ex.sets.length);
+  }, 0) / lastWorkoutExercises.length;
+  
+  return `Last worked ${daysSinceLastWorkout} days ago with average ${avgSets.toFixed(1)} sets and ${avgReps.toFixed(1)} reps per exercise.`;
+};
+
+// Generate a prompt for Gemini based on user preferences and history
 const generatePrompt = (prompt: AIWorkoutPrompt, energyLevel: number): string => {
+  // Get history summaries for each muscle group
+  const muscleGroups: MuscleGroup[] = ['shoulders', 'legs', 'back', 'arms', 'chest'];
+  const historyData = muscleGroups.map(group => {
+    return `- ${group}: ${getRecentMuscleGroupActivity(group)}`;
+  }).join('\n');
+  
   return `Create a personalized workout plan with the following details:
 - Fitness goal: ${prompt.fitnessGoal}
 - Experience level: ${prompt.experience}
-- Physical limitations or injuries: ${prompt.limitations}
+- Physical limitations or injuries: ${prompt.limitations || 'None'}
 - Current energy level: ${energyLevel}/5
+
+Recent workout history:
+${historyData}
+
+Based on the above information, recommend a workout focusing on the most neglected muscle group or the one that aligns best with the fitness goal.
+Take into account how long it's been since each muscle group was last trained.
+Adjust the number of sets and reps based on the energy level, with 5 being the highest energy.
+Suggest appropriate rest periods between sets.
 
 Respond ONLY with a valid JSON object in this exact format:
 {
@@ -34,9 +77,11 @@ Respond ONLY with a valid JSON object in this exact format:
     {
       "name": "Exercise Name",
       "sets": 3,
-      "reps": 10
+      "reps": 10,
+      "restSecs": 60
     }
-  ]
+  ],
+  "reasoning": "Brief explanation of why this workout was chosen"
 }`;
 };
 
@@ -80,7 +125,8 @@ const processAiResponse = (aiResponse: string, energyLevel: number): Workout => 
       energyLevel,
       exercises: workoutExercises,
       completed: false,
-      aiGenerated: true
+      aiGenerated: true,
+      reasoning: parsedResponse.reasoning || "Based on your fitness goals and history"
     };
 
     return workout;

@@ -25,6 +25,7 @@ export interface Workout {
   exercises: WorkoutExercise[];
   completed: boolean;
   aiGenerated?: boolean;
+  reasoning?: string;
 }
 
 export interface WorkoutHistory {
