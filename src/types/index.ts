@@ -24,8 +24,15 @@ export interface Workout {
   energyLevel: number;
   exercises: WorkoutExercise[];
   completed: boolean;
+  aiGenerated?: boolean;
 }
 
 export interface WorkoutHistory {
   workouts: Workout[];
+}
+
+export interface AIWorkoutPrompt {
+  fitnessGoal: string;
+  experience: string;
+  limitations: string;
 }
