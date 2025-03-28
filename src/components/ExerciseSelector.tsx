@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { WorkoutExercise } from '@/types';
 import { cn } from '@/lib/utils';
-import { ArrowRight } from 'lucide-react';
 
 interface ExerciseSelectorProps {
   exercises: WorkoutExercise[];
@@ -10,6 +8,9 @@ interface ExerciseSelectorProps {
 }
 
 const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({ exercises, onSelect }) => {
+  // Take only the first 4 exercises
+  const displayExercises = exercises.slice(0, 4);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="space-y-2">
@@ -20,22 +21,22 @@ const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({ exercises, onSelect
           </span>
         </div>
         <p className="text-muted-foreground">
-          These exercises target your {exercises[0]?.exercise.muscleGroup} today.
+          Select one of these exercises to begin your {exercises[0]?.exercise.muscleGroup} workout.
         </p>
       </div>
 
-      <div className="space-y-3">
-        {exercises.map((exerciseWithSets) => (
+      <div className="grid grid-cols-2 gap-4">
+        {displayExercises.map((exerciseWithSets) => (
           <button
             key={exerciseWithSets.exercise.id}
             onClick={() => onSelect(exerciseWithSets)}
-            className="swiss-card w-full text-left flex items-center justify-between group hover:border-swiss-red"
+            className={cn(
+              "swiss-card aspect-square flex flex-col items-center justify-center p-4 text-center",
+              "hover:border-swiss-red transition-all duration-200"
+            )}
           >
-            <div>
-              <h3 className="font-medium text-lg">{exerciseWithSets.exercise.name}</h3>
-              <p className="text-sm text-muted-foreground">{exerciseWithSets.sets.length} sets</p>
-            </div>
-            <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-swiss-red transition-colors" />
+            <h3 className="font-medium text-lg mb-2">{exerciseWithSets.exercise.name}</h3>
+            <p className="text-sm text-muted-foreground">{exerciseWithSets.sets.length} sets</p>
           </button>
         ))}
       </div>

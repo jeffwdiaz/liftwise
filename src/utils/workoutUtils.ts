@@ -1,4 +1,3 @@
-
 import { Exercise, MuscleGroup, Workout, WorkoutExercise, WorkoutHistory } from '@/types';
 import exercises from '@/data/exercises';
 
@@ -111,8 +110,8 @@ export const adjustVolumeForEnergyLevel = (
   return { reps: adjustedReps, sets: adjustedSets };
 };
 
-// Generate a workout based on energy level
-export const generateWorkout = (energyLevel: number): Workout => {
+// Generate a workout based on energy level and equipment
+export const generateWorkout = (energyLevel: number, equipment?: string): Workout => {
   // Get neglected muscle groups
   const neglectedGroups = getMostNeglectedMuscleGroups();
   
@@ -120,7 +119,27 @@ export const generateWorkout = (energyLevel: number): Workout => {
   const targetGroup = neglectedGroups[0];
   
   // Get exercises for this muscle group
-  const muscleExercises = exercises[targetGroup];
+  let muscleExercises = exercises[targetGroup];
+  
+  // Filter exercises based on equipment
+  if (equipment) {
+    muscleExercises = muscleExercises.filter(exercise => {
+      if (equipment === 'Dumbbells') {
+        return exercise.name.toLowerCase().includes('dumbbell') || 
+               exercise.name.toLowerCase().includes('dumbbells') ||
+               !exercise.name.toLowerCase().includes('barbell') &&
+               !exercise.name.toLowerCase().includes('machine') &&
+               !exercise.name.toLowerCase().includes('cable');
+      } else if (equipment === 'No Equipment') {
+        return !exercise.name.toLowerCase().includes('dumbbell') &&
+               !exercise.name.toLowerCase().includes('dumbbells') &&
+               !exercise.name.toLowerCase().includes('barbell') &&
+               !exercise.name.toLowerCase().includes('machine') &&
+               !exercise.name.toLowerCase().includes('cable');
+      }
+      return true;
+    });
+  }
   
   // Get baseline volume
   const { reps: baseReps, sets: baseSets } = calculateBaselineVolume(targetGroup);
@@ -144,7 +163,8 @@ export const generateWorkout = (energyLevel: number): Workout => {
     date: new Date().toISOString(),
     energyLevel,
     exercises: workoutExercises,
-    completed: false
+    completed: false,
+    equipment
   };
   
   return workout;

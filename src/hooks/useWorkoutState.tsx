@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Workout, WorkoutExercise, Set, AIWorkoutPrompt } from '@/types';
 import { generateWorkout, saveWorkout } from '@/utils/workoutUtils';
@@ -8,9 +7,9 @@ import { toast } from 'sonner';
 // Workout state machine
 export type WorkoutState = 
   | { screen: 'energy'; }
-  | { screen: 'method'; energyLevel: number; }
-  | { screen: 'aiSetup'; energyLevel: number; }
-  | { screen: 'aiForm'; energyLevel: number; }
+  | { screen: 'equipment'; energyLevel: number; }
+  | { screen: 'method'; energyLevel: number; equipment: string; }
+  | { screen: 'aiGenerator'; energyLevel: number; equipment: string; }
   | { screen: 'exercises'; workout: Workout; }
   | { screen: 'counter'; workout: Workout; exerciseIndex: number; setIndex: number; }
   | { screen: 'complete'; workout: Workout; };
@@ -21,55 +20,49 @@ export const useWorkoutState = () => {
 
   // Handle selecting energy level
   const handleEnergySelect = (energyLevel: number) => {
-    setState({ screen: 'method', energyLevel });
+    setState({ screen: 'equipment', energyLevel });
+  };
+
+  // Handle selecting equipment
+  const handleEquipmentSelect = (equipment: string) => {
+    if ('energyLevel' in state) {
+      setState({ screen: 'method', energyLevel: state.energyLevel, equipment });
+    }
   };
 
   // Handle selecting workout generation method
   const handleMethodSelect = (useAi: boolean) => {
-    if (useAi) {
-      // Check if we have the API key
-      if (hasGeminiApiKey()) {
-        if ('energyLevel' in state) {
-          setState({ screen: 'aiForm', energyLevel: state.energyLevel });
-        }
+    if ('energyLevel' in state && 'equipment' in state) {
+      if (useAi) {
+        setState({ screen: 'aiGenerator', energyLevel: state.energyLevel, equipment: state.equipment });
       } else {
-        if ('energyLevel' in state) {
-          setState({ screen: 'aiSetup', energyLevel: state.energyLevel });
-        }
-      }
-    } else {
-      // Use traditional method
-      if ('energyLevel' in state) {
-        const workout = generateWorkout(state.energyLevel);
+        const workout = generateWorkout(state.energyLevel, state.equipment);
         setState({ screen: 'exercises', workout });
       }
     }
   };
 
-  // Handle API key setup completion
-  const handleApiKeySet = () => {
-    if ('energyLevel' in state) {
-      setState({ screen: 'aiForm', energyLevel: state.energyLevel });
-    }
-  };
-
-  // Handle AI form submission
-  const handleAiFormSubmit = async (promptData: AIWorkoutPrompt) => {
-    if ('energyLevel' in state) {
-      setIsLoading(true);
-      try {
-        const aiWorkout = await getAiWorkoutRecommendation(promptData, state.energyLevel);
-        setState({ screen: 'exercises', workout: aiWorkout });
-        toast.success("AI workout generated successfully!");
-      } catch (error) {
-        console.error("Error generating AI workout:", error);
-        toast.error("Failed to generate AI workout. Using standard workout instead.");
-        // Fallback to regular workout generation
-        const workout = generateWorkout(state.energyLevel);
-        setState({ screen: 'exercises', workout });
-      } finally {
-        setIsLoading(false);
-      }
+  // Handle AI workout generation
+  const handleAiWorkoutGenerated = (aiWorkout: any) => {
+    if ('energyLevel' in state && 'equipment' in state) {
+      const workout: Workout = {
+        id: `workout-${Date.now()}`,
+        date: new Date().toISOString(),
+        energyLevel: state.energyLevel,
+        exercises: aiWorkout.exercises.map((ex: any) => ({
+          exercise: {
+            id: ex.name.toLowerCase().replace(/\s+/g, '-'),
+            name: ex.name,
+            muscleGroup: 'chest', // This will be determined by the AI
+            description: `${ex.sets} sets of ${ex.reps} reps with ${ex.rest} rest`
+          },
+          sets: Array(ex.sets).fill(null).map(() => ({ reps: ex.reps, completed: false }))
+        })),
+        completed: false,
+        equipment: state.equipment,
+        aiGenerated: true
+      };
+      setState({ screen: 'exercises', workout });
     }
   };
 
@@ -158,9 +151,9 @@ export const useWorkoutState = () => {
     state,
     isLoading,
     handleEnergySelect,
+    handleEquipmentSelect,
     handleMethodSelect,
-    handleApiKeySet,
-    handleAiFormSubmit,
+    handleAiWorkoutGenerated,
     handleExerciseSelect,
     handleUpdateReps,
     handleCompleteSet,

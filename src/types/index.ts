@@ -1,15 +1,15 @@
-
 export type MuscleGroup = 'shoulders' | 'legs' | 'back' | 'arms' | 'chest';
 
 export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
-  description?: string;
+  description: string;
 }
 
 export interface Set {
   reps: number;
+  weight: number;
   completed: boolean;
 }
 
@@ -26,6 +26,7 @@ export interface Workout {
   completed: boolean;
   aiGenerated?: boolean;
   reasoning?: string;
+  equipment?: string;
 }
 
 export interface WorkoutHistory {

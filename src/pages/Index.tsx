@@ -1,28 +1,27 @@
-
 import React from 'react';
 import { useWorkoutState } from '@/hooks/useWorkoutState';
 import WorkoutLayout from '@/components/WorkoutLayout';
 import WorkoutMethodSelector from '@/components/WorkoutMethodSelector';
 import EnergyLevelSelector from '@/components/EnergyLevelSelector';
+import EquipmentSelector from '@/components/EquipmentSelector';
 import ExerciseSelector from '@/components/ExerciseSelector';
 import RepCounter from '@/components/RepCounter';
 import WorkoutComplete from '@/components/WorkoutComplete';
-import GeminiApiKeySetup from '@/components/GeminiApiKeySetup';
-import AiWorkoutForm from '@/components/AiWorkoutForm';
+import AiWorkoutGenerator from '@/components/AiWorkoutGenerator';
 
 const Index = () => {
   const {
     state,
     isLoading,
     handleEnergySelect,
+    handleEquipmentSelect,
     handleMethodSelect,
-    handleApiKeySet,
-    handleAiFormSubmit,
     handleExerciseSelect,
     handleUpdateReps,
     handleCompleteSet,
     handleNext,
-    handleStartNew
+    handleStartNew,
+    handleAiWorkoutGenerated
   } = useWorkoutState();
 
   // Render current screen based on state
@@ -31,14 +30,23 @@ const Index = () => {
       case 'energy':
         return <EnergyLevelSelector onSelect={handleEnergySelect} />;
       
+      case 'equipment':
+        return <EquipmentSelector onSelect={handleEquipmentSelect} />;
+      
       case 'method':
         return <WorkoutMethodSelector onMethodSelect={handleMethodSelect} />;
       
-      case 'aiSetup':
-        return <GeminiApiKeySetup onApiKeySet={handleApiKeySet} />;
-      
-      case 'aiForm':
-        return <AiWorkoutForm onSubmit={handleAiFormSubmit} isLoading={isLoading} />;
+      case 'aiGenerator':
+        if ('energyLevel' in state && 'equipment' in state) {
+          return (
+            <AiWorkoutGenerator
+              energyLevel={state.energyLevel}
+              equipment={state.equipment}
+              onWorkoutGenerated={handleAiWorkoutGenerated}
+            />
+          );
+        }
+        return null;
       
       case 'exercises':
         return (
